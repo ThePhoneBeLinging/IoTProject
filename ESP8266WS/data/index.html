@@ -1,0 +1,113 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>CSV Data Chart</title>
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/chartjs-adapter-date-fns"></script>
+  <script src="https://cdn.jsdelivr.net/npm/papaparse@5.4.1/papaparse.min.js"></script>
+  <style>
+    body {
+      font-family: 'Segoe UI', sans-serif;
+      margin: 0;
+      padding: 0;
+      background: #f5f8fa;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      height: 100vh;
+    }
+    .container {
+      width: 90%;
+      max-width: 900px;
+      background: #fff;
+      box-shadow: 0 4px 20px rgba(0, 0, 0, 0.1);
+      border-radius: 20px;
+      padding: 2rem;
+    }
+    canvas {
+      width: 100% !important;
+      height: 400px !important;
+    }
+    h1 {
+      text-align: center;
+      color: #333;
+      margin-bottom: 1rem;
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <h1>Live CSV Data Chart</h1>
+    <canvas id="csvChart"></canvas>
+  </div>
+
+  <script>
+    const csvUrl = '/toilet.csv'; // Replace with your actual CSV URL
+    const chartCtx = document.getElementById('csvChart').getContext('2d');
+
+    const chart = new Chart(chartCtx, {
+      type: 'line',
+      data: {
+        labels: [],
+        datasets: [{
+          label: 'State',
+          data: [],
+          backgroundColor: 'rgba(75, 192, 192, 0.2)',
+          borderColor: 'rgba(75, 192, 192, 1)',
+          borderWidth: 2,
+          fill: true,
+          tension: 0.3,
+          pointRadius: 2
+        }]
+      },
+      options: {
+        responsive: true,
+        scales: {
+          x: {
+            type: 'time',
+            time: {
+              unit: 'minute'
+            },
+            title: {
+              display: true,
+              text: 'Timestamp'
+            }
+          },
+          y: {
+            title: {
+              display: true,
+              text: 'State'
+            },
+            ticks: {
+              precision: 0
+            }
+          }
+        }
+      }
+    });
+
+    function fetchDataAndUpdateChart() {
+      Papa.parse(csvUrl, {
+        download: true,
+        header: true,
+        dynamicTyping: true,
+        complete: function(results) {
+          const rows = results.data.filter(row => row.timestamp && row.state !== undefined);
+          const labels = rows.map(row => new Date(row.timestamp * 1000));
+          const data = rows.map(row => row.state);
+
+          chart.data.labels = labels;
+          chart.data.datasets[0].data = data;
+          chart.update();
+        }
+      });
+    }
+
+    fetchDataAndUpdateChart();
+    setInterval(fetchDataAndUpdateChart, 1000); // Update every 1 seconds
+  </script>
+</body>
+</html>
