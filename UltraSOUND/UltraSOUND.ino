@@ -25,13 +25,12 @@
 #include <ESP8266WiFi.h>
 #include <ESP8266HTTPClient.h>
 
-const char* ssid = "Bing Chilling";
-const char* password =  "deanospharos";
+const char* ssid = "NPJYOGA9I";
+const char* password =  "aaaabbbb";
 
-const char* hostname = "http://DeanPhar/updateToilet?state=";
+const char* hostname = "http://192.168.137.154/updateToilet?state=";
 String url = hostname;
-HTTPClient http;
-WiFiClientSecure client;
+
 
 #define SOUND_VELOCITY 0.034
 
@@ -39,7 +38,7 @@ bool personOnToilet = false;
 int pingsSincePersonDetected = 0;
 int pingsWithPerson = 0;
 int pingsBeforeStateSwitch = 5;
-int distanceSplitValue = 200;
+int distanceSplitValue = 50;
 
 const int trigPin = D0;
 const int echoPin = D1;
@@ -76,24 +75,35 @@ void setup() {
   Serial.println(ssid);
   Serial.print("IP address: ");
   Serial.println(WiFi.localIP());
-  client.setInsecure();
 }
 
 void toiletEmpty()
 {
+  WiFiClient client;
+  HTTPClient http;
   personOnToilet = false;
   http.begin(client, url + "0");
+  http.GET();
+  Serial.println(url + "0");
   http.end();
 }
 
 void toiletOccupied()
 {
+  WiFiClient client;
+  HTTPClient http;
   personOnToilet = true;
   http.begin(client, url + "1");
+  Serial.println(url + "1");
+  http.GET();
   http.end();
 }
 
 void loop() {
+  if (WiFi.status() != WL_CONNECTED)
+  {
+    Serial.println("Disconnected");
+  }
   emitSoundWaves();
   float distance = getDistance();
   Serial.println(personOnToilet);
@@ -101,7 +111,7 @@ void loop() {
   {
     pingsSincePersonDetected++;
     pingsWithPerson = 0;
-    if (pingsSincePersonDetected >= pingsBeforeStateSwitch)
+    if (pingsSincePersonDetected == pingsBeforeStateSwitch)
     {
       toiletEmpty();
     }
@@ -110,7 +120,7 @@ void loop() {
   {
     pingsSincePersonDetected = 0;
     pingsWithPerson++;
-    if (pingsWithPerson >= pingsBeforeStateSwitch)
+    if (pingsWithPerson == pingsBeforeStateSwitch)
     {
       toiletOccupied();
     }
