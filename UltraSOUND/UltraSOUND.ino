@@ -28,7 +28,7 @@
 const char* ssid = "NPJYOGA9I";
 const char* password =  "aaaabbbb";
 
-const char* hostname = "http://192.168.137.154/updateToilet?state=";
+const char* hostname = "http://bathroommaster.local/updateToilet?state=";
 String url = hostname;
 
 
@@ -110,19 +110,19 @@ void loop() {
   if (personOnToilet && distance > distanceSplitValue)
   {
     pingsSincePersonDetected++;
-    pingsWithPerson = 0;
     if (pingsSincePersonDetected == pingsBeforeStateSwitch)
     {
       toiletEmpty();
+      pingsSincePersonDetected = 0;
     }
   }
   else if (distance <= distanceSplitValue)
   {
-    pingsSincePersonDetected = 0;
     pingsWithPerson++;
     if (pingsWithPerson == pingsBeforeStateSwitch)
     {
       toiletOccupied();
+      pingsWithPerson = 0;
     }
   }
   delay(1000);
