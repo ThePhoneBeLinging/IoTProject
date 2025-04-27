@@ -4,7 +4,7 @@
 #include <ESP8266mDNS.h>
 #include <ESP8266WebServer.h>   // Include the WebServer library
 #include <WiFiUdp.h>
-#include <NTPClient.h>
+#include <NTPClient.h> // NTP Client by Fabrice Weinberg
 #include <ESP8266mDNS.h>
 #include "FS.h"
 
@@ -14,7 +14,7 @@
 String newHostname = "bathroommaster";
 
 ESP8266WiFiMulti wifiMulti;     // Create an instance of the ESP8266WiFiMulti class, called 'wifiMulti'
-ESP8266WebServer server(80);    // Create a webserver object that listens for HTTP request on port 80
+ESP8266WebServer server(8080);    // Create a webserver object that listens for HTTP request on port 80
 
 WiFiUDP ntpUDP;
 NTPClient timeClient(ntpUDP, "pool.ntp.org", 0, 60000); // 0 = UTC offset in seconds, 60000 = update interval (ms)
@@ -29,7 +29,7 @@ void setup(void){
   Serial.println('\n');
 
   
-  wifiMulti.addAP("NPJYOGA9I", "aaaabbbb");   // add Wi-Fi networks you want to connect to
+  wifiMulti.addAP("Dunder Milffin", "BodomReaper666");   // add Wi-Fi networks you want to connect to
   WiFi.hostname(newHostname.c_str());
 
 
@@ -168,7 +168,7 @@ void updateToilet() {
 void updateWater() {
   String water_amt = server.arg("water_amt");
   float number = water_amt.toFloat();;
-  bool success = !appendToFile(WATER_FILE, "%d,%f\n", unixTime, water_amt);
+  bool success = !appendToFile(WATER_FILE, "%d,%f\n", unixTime, number);
   if (success) { server.send(200, "text/plain", "OK"); }
   else { server.send(500, "text/plain", "ERROR WRITING TO FILE"); }
 }

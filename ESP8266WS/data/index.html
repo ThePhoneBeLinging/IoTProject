@@ -48,7 +48,7 @@
           { field: 'temp', label: 'Temperature (°C)', axis: 'y', color: 'rgba(255, 99, 132, 1)' },
           { field: 'hum', label: 'Humidity (%)', axis: 'y1', color: 'rgba(54, 162, 235, 1)' }
         ],
-        title: 'Temperature and Humidity Over Time'
+        title: 'Temperature and Humidity over time'
       },
       {
         url: 'toilet.csv',
@@ -57,6 +57,14 @@
           { field: 'state', label: 'Toilet state', axis: 'y', color: 'rgba(255, 99, 132, 1)' }
         ],
         title: 'Toilet state over time'
+      },
+      {
+        url: 'water.csv',
+        xField: 'timestamp',
+        yFields: [
+          { field: 'water_amt', label: 'Showet water usage (L)', axis: 'y', color: 'rgba(0, 80, 240, 1)' }
+        ],
+        title: 'Shower water usage over time'
       }
     ];
 
