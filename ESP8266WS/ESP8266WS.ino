@@ -217,7 +217,15 @@ void getWindowState() {
 
 #define LCD_maxindex 4
 int LCD_index = 0;
+#define LCD_update_time_ms 10000
+long last_LCD_update_ms = millis();
 void updateLCD() {
+  if (last_LCD_update_ms + LCD_update_time_ms <= millis()) {
+    last_LCD_update_ms = millis();
+  } else {
+    return;
+  }
+  
   char msg[17];
   lcd.clear();
   lcd.setCursor(0,0);
@@ -226,7 +234,7 @@ void updateLCD() {
     case 0: lcd.print("Toilet State"); lcd.setCursor(0,1); lcd.print(toilet_state ? "Active" : "Inactive"); break;
     case 1: lcd.print("Shower Usage"); lcd.setCursor(0,1); sprintf(msg, "%.2fL", water_number); lcd.print(msg); break;
     case 2: lcd.print("Room Temperature"); lcd.setCursor(0,1); sprintf(msg, "%.2f C", temp); lcd.print(msg); break;
-    case 3: lcd.print("Room Humidity"); lcd.setCursor(0,1); sprintf(msg, "%.2f %", hum); lcd.print(msg); break;
+    case 3: lcd.print("Room Humidity"); lcd.setCursor(0,1); sprintf(msg, "%.2f %%", hum); lcd.print(msg); break;
   }
   LCD_index = (LCD_index+1)%LCD_maxindex;
 }
