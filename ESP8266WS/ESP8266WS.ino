@@ -23,8 +23,6 @@ NTPClient timeClient(ntpUDP, "pool.ntp.org", 0, 60000); // 0 = UTC offset in sec
 unsigned long unixTime;
 
 LiquidCrystal_I2C lcd(0x27,16,2);  // set the LCD address to 0x27 for a 16 chars and 2 line display
-#define WIFI_SSID "Dunder Milffin"
-#define WIFI_PASSWORD "BodomReaper666"
 
 void handleRoot();              // function prototypes for HTTP handlers
 void handleNotFound();
