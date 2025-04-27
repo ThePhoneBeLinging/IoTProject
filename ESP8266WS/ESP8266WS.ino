@@ -10,6 +10,7 @@
 
 #define WATER_FILE "/water.csv"
 #define TOILET_FILE "/toilet.csv"
+#define DHT_FILE "/dht.csv"
 String newHostname = "bathroommaster";
 
 ESP8266WiFiMulti wifiMulti;     // Create an instance of the ESP8266WiFiMulti class, called 'wifiMulti'
@@ -85,52 +86,60 @@ void setup(void){
   
   server.on("/updateToilet", updateToilet);
   server.on("/submitWater", updateWater);
+  server.on("/submitBathroomDHT", submitBathroomDHT);
   server.on("/windowState", getWindowState);
   server.on("/temperature", getTemperature);
 
-  initializeWaterFile();
-  initializeToiletFile();
+  initializeFile(WATER_FILE, "timestamp,water_amt\n");
+  initializeFile(TOILET_FILE, "timestamp,state\n");
+  initializeFile(DHT_FILE, "timestamp,temp,hum\n");
   timeClient.begin();
   server.begin();
   Serial.println("HTTP server started");
 }
 
-void initializeWaterFile() {
-  if (!SPIFFS.exists(WATER_FILE)) {
-    File water_filed = SPIFFS.open(WATER_FILE, "w");
-    water_filed.write("timestamp,water_amt\n");
+void initializeFile(char* filename, char* firstline) {
+  if (!SPIFFS.exists(filename)) {
+    File water_filed = SPIFFS.open(filename, "w");
+    water_filed.write(firstline, strlen(firstline));
     water_filed.close();
   } else {
-    Serial.println("Water file already exists");
+    Serial.print(filename);
+    Serial.println(" already exists");
   }
 }
-void appendToWaterFile(float water_amt) {
-  if (SPIFFS.exists(WATER_FILE)) {
-    File water_filed = SPIFFS.open(WATER_FILE, "a");
-    char waterdata[128];
-    int len = sprintf(waterdata, "%d,%f\n", unixTime, water_amt);
-    water_filed.write(waterdata, len);
-    water_filed.close();
-  }
-}
-void initializeToiletFile() {
-  if (!SPIFFS.exists(TOILET_FILE)) {
-    File toilet_filed = SPIFFS.open(TOILET_FILE, "w");
-    toilet_filed.write("timestamp,state\n");
-    toilet_filed.close();
+
+int appendToFile(const char* filename, const char* format, ...) {
+  if (SPIFFS.exists(filename)) {
+    File file = SPIFFS.open(filename, "a");
+    if (!file) {
+      Serial.println("Failed to open file for appending!");
+      return 1;
+    }
+
+    char buffer[128];  // Adjust size as needed
+    va_list args;
+    va_start(args, format);
+    int len = vsnprintf(buffer, sizeof(buffer), format, args);
+    va_end(args);
+
+    if (len > 0 && len < sizeof(buffer)) {
+      file.write((const uint8_t*)buffer, len);
+    } else {
+      Serial.println("Error formatting data or buffer overflow.");
+      file.close();
+      return 1;
+    }
+
+    file.close();
+    return 0;
   } else {
-    Serial.println("Toilet file already exists");
+    Serial.print("File not found: ");
+    Serial.println(filename);
+    return 1;
   }
 }
-void appendToToiletFile(int tstate) {
-  if (SPIFFS.exists(TOILET_FILE)) {
-    File toilet_filed = SPIFFS.open(TOILET_FILE, "a");
-    char toiletdata[64];
-    int len = sprintf(toiletdata, "%d,%d\n", unixTime, tstate);
-    toilet_filed.write(toiletdata, len);
-    toilet_filed.close();
-  }
-}
+
 
 void loop(void){
   MDNS.update(); // Important!
@@ -151,15 +160,24 @@ void handleNotFound(){
 void updateToilet() {
   String value = server.arg("state");
   int number = value.toInt();
-  appendToToiletFile(number);
-  server.send(200, "text/plain", "OK");
+  bool success = !appendToFile(TOILET_FILE, "%d,%d\n", unixTime, number);
+  if (success) { server.send(200, "text/plain", "OK"); }
+  else { server.send(500, "text/plain", "ERROR WRITING TO FILE"); }
 }
 
 void updateWater() {
   String water_amt = server.arg("water_amt");
   float number = water_amt.toFloat();;
-  appendToWaterFile(number);
-  server.send(200, "text/plain", "OK");
+  bool success = !appendToFile(WATER_FILE, "%d,%f\n", unixTime, water_amt);
+  if (success) { server.send(200, "text/plain", "OK"); }
+  else { server.send(500, "text/plain", "ERROR WRITING TO FILE"); }
+}
+void submitBathroomDHT() {
+  float temp = server.arg("temp").toFloat();
+  float hum = server.arg("hum").toFloat();
+  bool success = !appendToFile(DHT_FILE, "%d,%f,%f\n", unixTime, temp, hum);
+  if (success) { server.send(200, "text/plain", "OK"); }
+  else { server.send(500, "text/plain", "ERROR WRITING TO FILE"); }
 }
 float temperature = 19.0;
 void getTemperature() {
@@ -191,3 +209,4 @@ String getContentType(String filename) {
   else if (filename.endsWith(".zip")) return "application/zip";
   return "text/plain";
 }
+  
