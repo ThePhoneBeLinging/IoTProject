@@ -7,6 +7,8 @@
 #include <NTPClient.h> // NTP Client by Fabrice Weinberg
 #include <ESP8266mDNS.h>
 #include "FS.h"
+#include <Wire.h> 
+#include <LiquidCrystal_I2C.h> // Using adafruit lcd library
 
 #define WATER_FILE "/water.csv"
 #define TOILET_FILE "/toilet.csv"
@@ -20,6 +22,10 @@ WiFiUDP ntpUDP;
 NTPClient timeClient(ntpUDP, "pool.ntp.org", 0, 60000); // 0 = UTC offset in seconds, 60000 = update interval (ms)
 unsigned long unixTime;
 
+LiquidCrystal_I2C lcd(0x27,16,2);  // set the LCD address to 0x27 for a 16 chars and 2 line display
+#define WIFI_SSID "Dunder Milffin"
+#define WIFI_PASSWORD "BodomReaper666"
+
 void handleRoot();              // function prototypes for HTTP handlers
 void handleNotFound();
 
@@ -28,8 +34,16 @@ void setup(void){
   delay(10);
   Serial.println('\n');
 
+  lcd.init();
+  lcd.backlight();
+  lcd.clear();
+  lcd.setCursor(0,0);
+  lcd.print("Connecting:");
+  lcd.setCursor(0,1);
+  lcd.print(WIFI_SSID);
+
   
-  wifiMulti.addAP("Dunder Milffin", "BodomReaper666");   // add Wi-Fi networks you want to connect to
+  wifiMulti.addAP(WIFI_SSID, WIFI_PASSWORD);   // add Wi-Fi networks you want to connect to
   WiFi.hostname(newHostname.c_str());
 
 
@@ -44,6 +58,11 @@ void setup(void){
   Serial.println(WiFi.SSID());              // Tell us what network we're connected to
   Serial.print("IP address:\t");
   Serial.println(WiFi.localIP());           // Send the IP address of the ESP8266 to the computer
+  lcd.clear();
+  lcd.setCursor(0,0);
+  lcd.print("Connected, IP:");
+  lcd.setCursor(0,1);
+  lcd.print(WiFi.localIP());
 
      // Set mDNS hostname
   if (MDNS.begin(newHostname)) {
@@ -147,6 +166,7 @@ void loop(void){
   unixTime = timeClient.getEpochTime(); // Set global unixTime
   
   server.handleClient();                    // Listen for HTTP requests from clients
+  updateLCD();
 }
 
 void handleRoot() {
@@ -157,34 +177,35 @@ void handleNotFound(){
   server.send(404, "text/plain", "404: Not found"); // Send HTTP status 404 (Not Found) when there's no handler for the URI in the request
 }
 
+int toilet_state = 0;
 void updateToilet() {
   String value = server.arg("state");
-  int number = value.toInt();
-  bool success = !appendToFile(TOILET_FILE, "%d,%d\n", unixTime, number);
+  toilet_state = value.toInt();
+  bool success = !appendToFile(TOILET_FILE, "%d,%d\n", unixTime, toilet_state);
   if (success) { server.send(200, "text/plain", "OK"); }
   else { server.send(500, "text/plain", "ERROR WRITING TO FILE"); }
 }
 
+float water_number = 0.0;
 void updateWater() {
   String water_amt = server.arg("water_amt");
-  float number = water_amt.toFloat();;
-  bool success = !appendToFile(WATER_FILE, "%d,%f\n", unixTime, number);
+  water_number = water_amt.toFloat();;
+  bool success = !appendToFile(WATER_FILE, "%d,%f\n", unixTime, water_number);
   if (success) { server.send(200, "text/plain", "OK"); }
   else { server.send(500, "text/plain", "ERROR WRITING TO FILE"); }
 }
+
+float temp = 0.0;
+float hum = 0.0;
 void submitBathroomDHT() {
-  float temp = server.arg("temp").toFloat();
-  float hum = server.arg("hum").toFloat();
+  temp = server.arg("temp").toFloat();
+  hum = server.arg("hum").toFloat();
   bool success = !appendToFile(DHT_FILE, "%d,%f,%f\n", unixTime, temp, hum);
   if (success) { server.send(200, "text/plain", "OK"); }
   else { server.send(500, "text/plain", "ERROR WRITING TO FILE"); }
 }
-float temperature = 19.0;
 void getTemperature() {
-  temperature += 0.5;
-  if (temperature > 24) { temperature = 19.0; }
-  Serial.println("Temp");
-  server.send(200, "text/plain", String(temperature));
+  server.send(200, "text/plain", String(temp));
 }
 
 bool windowState = false;
@@ -192,6 +213,22 @@ void getWindowState() {
   windowState = !windowState;
   Serial.println("Window");
   server.send(200, "text/plain", String(windowState ? "true" : "false"));
+}
+
+#define LCD_maxindex 4
+int LCD_index = 0;
+void updateLCD() {
+  char msg[17];
+  lcd.clear();
+  lcd.setCursor(0,0);
+  
+  switch(LCD_index) {
+    case 0: lcd.print("Toilet State"); lcd.setCursor(0,1); lcd.print(toilet_state ? "Active" : "Inactive"); break;
+    case 1: lcd.print("Shower Usage"); lcd.setCursor(0,1); sprintf(msg, "%.2fL", water_number); lcd.print(msg); break;
+    case 2: lcd.print("Room Temperature"); lcd.setCursor(0,1); sprintf(msg, "%.2f C", temp); lcd.print(msg); break;
+    case 3: lcd.print("Room Humidity"); lcd.setCursor(0,1); sprintf(msg, "%.2f %", hum); lcd.print(msg); break;
+  }
+  LCD_index = (LCD_index+1)%LCD_maxindex;
 }
 
 
