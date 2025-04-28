@@ -91,15 +91,25 @@ void setup(void){
     }
 
     if (SPIFFS.exists(path)) {
-      File file = SPIFFS.open(path, "r");
       String contentType = getContentType(path);
-      server.streamFile(file, contentType);
+      server.chunkedResponseModeStart(200, contentType);
+      File file = SPIFFS.open(path, "r");
+      
+      server.setContentLength(file.size());
+      
+     
+      
+      char buffer[2048];
+      while(file.available()) {
+        size_t len = file.readBytes(buffer, 2048);
+        server.sendContent(buffer, len);
+      }
+      server.chunkedResponseFinalize();
       file.close();
     } else {
       server.send(404, "text/plain", "File Not Found");
     }
   });
-
   
   server.on("/updateToilet", updateToilet);
   server.on("/submitWater", updateWater);
