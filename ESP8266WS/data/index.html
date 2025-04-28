@@ -159,7 +159,7 @@
       const ctx = createChartContainer(config.title);
       const chart = setupMultiYAxisChart(ctx, config.xField, config.yFields);
       fetchAndUpdate(chart, config);
-      setInterval(() => fetchAndUpdate(chart, config), 2000);
+      setInterval(() => fetchAndUpdate(chart, config), 20000);
     });
   </script>
 </body>
