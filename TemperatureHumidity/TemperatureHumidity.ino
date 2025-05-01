@@ -2,6 +2,9 @@
 #include <ESP8266HTTPClient.h>
 #include <DHT.h>
 
+#define USE_SERIAL
+#define USE_LEDS
+
 // We have a DHT11 on pin D3
 DHT dht(D3, DHT11);
 
@@ -16,28 +19,39 @@ const uint16_t port = 80;
 
 void setup() {
 	// Initialise everything
-	Serial.begin(115200);
+	#ifdef USE_SERIAL
+		Serial.begin(115200);
+	#endif
 	dht.begin();
 	WiFi.begin(ssid, pswd);
+	#ifdef USE_LEDS
+		pinMode(LED_BUILTIN, OUTPUT);
+		pinMode(LED_BUILTIN_AUX, OUTPUT);
+		digitalWrite(LED_BUILTIN, HIGH);
+		digitalWrite(LED_BUILTIN_AUX, HIGH);
+	#endif
 }
 
 void loop() {
-	// Always wait a while before doing stuff again
-	delay(15000);
+	#ifdef USE_LEDS
+		digitalWrite(LED_BUILTIN_AUX, WiFi.status() == WL_CONNECTED);
+	#endif
 
 	// If we aren't connected to WiFi, don't do anything
-	if (WiFi.status() != WL_CONNECTED) return;
+	if (WiFi.status() != WL_CONNECTED) { delay(500); return; }
 
 	// Read data from sensor
 	float temperature = dht.readTemperature(false, true);
 	float humidity = dht.readHumidity();
 
-	// Send data over serial
-	Serial.print("Temp = ");
-	if (isnan(temperature)) Serial.print("N/A"); else { Serial.print(temperature); Serial.print("°C"); }
-	Serial.print(", Humi = ");
-	if (isnan(humidity)) Serial.print("N/A"); else { Serial.print(humidity); Serial.print("%"); }
-	Serial.print("\n");
+	#ifdef USE_SERIAL
+		// Send data over serial
+		Serial.print("Temp = ");
+		if (isnan(temperature)) Serial.print("N/A"); else { Serial.print(temperature); Serial.print("°C"); }
+		Serial.print(", Humi = ");
+		if (isnan(humidity)) Serial.print("N/A"); else { Serial.print(humidity); Serial.print("%"); }
+		Serial.print("\n");
+	#endif
 
 	// Don't bother sending NaNs to the server
 	if (isnan(temperature) || isnan(humidity)) return;
@@ -50,7 +64,18 @@ void loop() {
 	// Connect to the server and actually send the data
 	http.begin(client, host, port, endpoint);
 	int statusCode = http.GET();
-	if (statusCode < 0) {
-		Serial.printf("Web request failed: %s\n", http.errorToString(statusCode).c_str());
-	}
+	#ifdef USE_SERIAL
+		if (statusCode < 0) {
+			Serial.printf("Web request failed: %s\n", http.errorToString(statusCode).c_str());
+		}
+	#endif
+	#ifdef USE_LEDS
+		int duration = statusCode < 0 ? 1000 : 100;
+		digitalWrite(LED_BUILTIN, LOW);
+		delay(duration);
+		digitalWrite(LED_BUILTIN, HIGH);
+		delay(15000 - duration);
+	#else
+		delay(15000);
+	#endif
 }
