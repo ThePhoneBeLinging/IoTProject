@@ -1,7 +1,7 @@
 #include <ESP8266WiFi.h>
 #include <ESP8266HTTPClient.h>
 
-int lightPin = D0;
+int lightPin = D2;
 int motionSensorPin = D1;
 
 bool lightOnBool = false;
@@ -17,36 +17,39 @@ String url = hostname;
 
 void lightOn()
 {
-  lightOnBool = true;
-  lightPin = true;
   timeStamp = millis();
   digitalWrite(lightPin, HIGH);
-  
-  WiFiClient client;
-  HTTPClient http;
-  http.begin(client, url + "0");
-  http.GET();
-  Serial.println(url + "0");
-  http.end();
+  if (!lightOnBool)
+  {
+    WiFiClient client;
+    HTTPClient http;
+    http.begin(client, url + "1");
+    http.GET();
+    Serial.println(url + "1");
+    http.end();
+  }
+  lightOnBool = true;
 }
 
 void lightOff()
 {
-  lightOnBool = false;
   digitalWrite(lightPin, LOW);
-
-  WiFiClient client;
-  HTTPClient http;
-  http.begin(client, url + "0");
-  http.GET();
-  Serial.println(url + "0");
-  http.end();
+  if (lightOnBool)
+  {
+    WiFiClient client;
+    HTTPClient http;
+    http.begin(client, url + "0");
+    http.GET();
+    Serial.println(url + "0");
+    http.end();
+  }
+  lightOnBool = false;
 }
 
 void setup() 
 {
   Serial.begin(9600);
-  pinMode(lightPin,  OUTPUT);
+  pinMode(lightPin, OUTPUT);
   pinMode(motionSensorPin, INPUT);
   WiFi.begin(ssid, password);
   while (WiFi.status() != WL_CONNECTED) 
@@ -63,9 +66,12 @@ void setup()
 void loop() 
 {
   int LightValue = analogRead(A0);
-  Serial.println(LightValue);
   if (LightValue > lightValueLimit)
   {
+    if (lightOnBool)
+    {
+      lightOff();
+    }
     return;
   }
 
