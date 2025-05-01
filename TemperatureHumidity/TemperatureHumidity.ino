@@ -54,7 +54,7 @@ void loop() {
 	#endif
 
 	// Don't bother sending NaNs to the server
-	if (isnan(temperature) || isnan(humidity)) return;
+	if (isnan(temperature) || isnan(humidity)) { delay(15000); return; }
 
 	WiFiClient client;
 	HTTPClient http;
