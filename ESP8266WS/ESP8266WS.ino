@@ -10,13 +10,25 @@
 #include <Wire.h> 
 #include <LiquidCrystal_I2C.h> // Using adafruit lcd library
 
+#define WIFI_SSID ""
+#define WIFI_PASSWORD ""
+
 #define WATER_FILE "/water.csv"
 #define TOILET_FILE "/toilet.csv"
 #define DHT_FILE "/dht.csv"
+#define LIGHT_FILE "/light.csv"
+#define FILE_COUNT 4
+char* files[FILE_COUNT] {
+  WATER_FILE, TOILET_FILE, DHT_FILE, LIGHT_FILE
+};
 String newHostname = "bathroommaster";
 
+long last_purgetime = 0;
+int purge_checktime = 60000; // Once a minute (should be higher)
+int purge_timelimit_sec = 120; // Purge all data older than 2 minutes
+
 ESP8266WiFiMulti wifiMulti;     // Create an instance of the ESP8266WiFiMulti class, called 'wifiMulti'
-ESP8266WebServer server(8080);    // Create a webserver object that listens for HTTP request on port 80
+ESP8266WebServer server(80);    // Create a webserver object that listens for HTTP request on port 80
 
 WiFiUDP ntpUDP;
 NTPClient timeClient(ntpUDP, "pool.ntp.org", 0, 60000); // 0 = UTC offset in seconds, 60000 = update interval (ms)
@@ -42,8 +54,8 @@ void setup(void){
 
   
   wifiMulti.addAP(WIFI_SSID, WIFI_PASSWORD);   // add Wi-Fi networks you want to connect to
+  wifiMulti.addAP("NPJYOGA9I", "aaaabbbb");
   WiFi.hostname(newHostname.c_str());
-
 
   Serial.println("Connecting ...");
   int i = 0;
@@ -111,6 +123,7 @@ void setup(void){
     }
   });
   
+  server.on("/updateLight", updateLight);
   server.on("/updateToilet", updateToilet);
   server.on("/submitWater", updateWater);
   server.on("/submitBathroomDHT", submitBathroomDHT);
@@ -120,6 +133,7 @@ void setup(void){
   initializeFile(WATER_FILE, "timestamp,water_amt\n");
   initializeFile(TOILET_FILE, "timestamp,state\n");
   initializeFile(DHT_FILE, "timestamp,temp,hum\n");
+  initializeFile(LIGHT_FILE, "timestamp,state\n");
   timeClient.begin();
   server.begin();
   Serial.println("HTTP server started");
@@ -175,6 +189,7 @@ void loop(void){
   
   server.handleClient();                    // Listen for HTTP requests from clients
   updateLCD();
+  purgeData();
 }
 
 void handleRoot() {
@@ -190,6 +205,15 @@ void updateToilet() {
   String value = server.arg("state");
   toilet_state = value.toInt();
   bool success = !appendToFile(TOILET_FILE, "%d,%d\n", unixTime, toilet_state);
+  if (success) { server.send(200, "text/plain", "OK"); }
+  else { server.send(500, "text/plain", "ERROR WRITING TO FILE"); }
+}
+
+int light_state = 0;
+void updateLight() {
+  String value = server.arg("state");
+  light_state = value.toInt();
+  bool success = !appendToFile(LIGHT_FILE, "%d,%d\n", unixTime, light_state);
   if (success) { server.send(200, "text/plain", "OK"); }
   else { server.send(500, "text/plain", "ERROR WRITING TO FILE"); }
 }
@@ -245,6 +269,60 @@ void updateLCD() {
     case 3: lcd.print("Room Humidity"); lcd.setCursor(0,1); sprintf(msg, "%.2f %%", hum); lcd.print(msg); break;
   }
   LCD_index = (LCD_index+1)%LCD_maxindex;
+}
+
+void purgeData() {
+  long currenttime = millis();
+  if (last_purgetime + purge_checktime > currenttime) return;
+  Serial.println("ATTEMPTING TO PURGE DATA!");
+
+  for (int i = 0; i < FILE_COUNT; i++) {
+    int purge_count = 0;
+    const char* path = files[i];
+
+    File original = SPIFFS.open(path, "r");
+    if (!original) continue;
+
+    String tempPath = String(path) + ".tmp";
+    File temp = SPIFFS.open(tempPath.c_str(), "w");
+    if (!temp) {
+      original.close();
+      continue;
+    }
+
+    String infoline = original.readStringUntil('\n'); // Purge first entry in csv file
+    infoline.trim();
+    temp.println(infoline);
+    while (original.available()) {
+      String line = original.readStringUntil('\n');
+      line.trim();
+      if (line.length() == 0) continue;
+
+      int commaIndex = line.indexOf(',');
+      if (commaIndex == -1) continue;
+
+      long entryTime = line.substring(0, commaIndex).toInt();
+      if (entryTime >= (unixTime - purge_timelimit_sec)) {
+        temp.println(line);
+      } else {
+        purge_count++;
+      }
+    }
+
+    original.close();
+    temp.close();
+
+    SPIFFS.remove(path);
+    SPIFFS.rename(tempPath.c_str(), path);
+    if (purge_count > 0) {
+      Serial.print("Removed ");
+      Serial.print(purge_count);
+      Serial.print(" items from ");
+      Serial.println(path);
+    }
+  }
+
+  last_purgetime = currenttime;
 }
 
 
