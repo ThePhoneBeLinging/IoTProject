@@ -5,6 +5,10 @@
 #define USE_SERIAL
 #define USE_LEDS
 
+// The delay in ms to use between each sensor read
+// Don't set it too low as to not overload the server
+const int DELAY = 15000;
+
 // We have a DHT11 on pin D3
 DHT dht(D3, DHT11);
 
@@ -54,7 +58,7 @@ void loop() {
 	#endif
 
 	// Don't bother sending NaNs to the server
-	if (isnan(temperature) || isnan(humidity)) { delay(15000); return; }
+	if (isnan(temperature) || isnan(humidity)) { delay(DELAY); return; }
 
 	WiFiClient client;
 	HTTPClient http;
@@ -74,8 +78,8 @@ void loop() {
 		digitalWrite(LED_BUILTIN, LOW);
 		delay(duration);
 		digitalWrite(LED_BUILTIN, HIGH);
-		delay(15000 - duration);
+		delay(DELAY - duration);
 	#else
-		delay(15000);
+		delay(DELAY);
 	#endif
 }
