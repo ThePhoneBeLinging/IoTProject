@@ -129,6 +129,7 @@ void setup(void){
   server.on("/submitBathroomDHT", submitBathroomDHT);
   server.on("/windowState", getWindowState);
   server.on("/temperature", getTemperature);
+  server.on("/shouldTurnOn", getShouldTurnOn);
 
   initializeFile(WATER_FILE, "timestamp,water_amt\n");
   initializeFile(TOILET_FILE, "timestamp,state\n");
@@ -245,6 +246,15 @@ void getWindowState() {
   windowState = !windowState;
   Serial.println("Window");
   server.send(200, "text/plain", String(windowState ? "true" : "false"));
+}
+
+bool shouldTurnOn = false;
+void getShouldTurnOn() {
+  if(temp < 20.0) {
+    shouldTurnOn = true;
+  }
+  Serial.println("Thermostat");
+  server.send(200, "text/plain", String(shouldTurnOn ? "true" : "false"));
 }
 
 #define LCD_maxindex 4
