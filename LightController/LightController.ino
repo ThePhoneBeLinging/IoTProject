@@ -85,12 +85,8 @@ void setup()
 void loop() 
 {
   int LightValue = analogRead(A0);
-  if (LightValue > lightValueLimit)
+  if (LightValue > lightValueLimit && !lightOnBool)
   {
-    if (lightOnBool)
-    {
-      lightOff();
-    }
     return;
   }
 
