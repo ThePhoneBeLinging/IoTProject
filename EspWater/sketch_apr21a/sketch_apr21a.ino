@@ -1,9 +1,15 @@
 #include <Wire.h>
 #include <MPU6050.h>
+#include <ESP8266WiFiMulti.h> 
 #include <ESP8266WiFi.h>
 #include <WiFiClient.h>
 #include <ESP8266HTTPClient.h>
 
+#define WIFI_SSID ""
+#define WIFI_PASSWORD ""
+#define DATA_ENDPOINT "http://192.168.137.225/submitWater?"
+String newHostname = "showerguy";
+ESP8266WiFiMulti wifiMulti;
 
 MPU6050 mpu;
 
@@ -11,12 +17,12 @@ float wmin = 10.0f;
 float threshhold = 2.0f;
 float wmax = 110.0f;
 float lpm_max = 15.0f; // Liters per minute at max shower pressure 
+int sumbit_delay = 30000;
 
 void setup() {
   Serial.begin(115200);
 
   // Begin all IO
-  WiFi.begin(SSID, PASSWORD);
   Wire.begin();
   mpu.initialize();
 
@@ -27,10 +33,15 @@ void setup() {
   }
   Serial.println("MPU6050 ready.");
 
-  // Wait for wifi connecting
-  while (WiFi.status() != WL_CONNECTED) {
-    delay(200);
-    Serial.print(".");
+  wifiMulti.addAP(WIFI_SSID, WIFI_PASSWORD);   // add Wi-Fi networks you want to connect to
+  wifiMulti.addAP("NPJYOGA9I", "aaaabbbb");
+  WiFi.hostname(newHostname.c_str());
+
+  Serial.println("Connecting ...");
+  int i = 0;
+  while (wifiMulti.run() != WL_CONNECTED) { // Wait for the Wi-Fi to connect: scan for Wi-Fi networks, and connect to the strongest of the networks above
+    delay(250);
+    Serial.print('.');
   }
   Serial.println("\nConnected to WiFi");
   Serial.print("Local IP Address: ");
@@ -59,7 +70,7 @@ void loop() {
 
   sendDataToWebserver(wateramt);
 
-  delay(5000);
+  delay(sumbit_delay);
 }
 
 float mapFloat(float x, float in_min, float in_max, float out_min, float out_max) { // <- Credit to chatgpt

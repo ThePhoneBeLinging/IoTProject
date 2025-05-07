@@ -2,14 +2,14 @@
 #include <WiFiClient.h>
 #include <ESP8266HTTPClient.h>
 
-const char* ssid = "";
-const char* password = "";
-const char* url = "http://bathroommaster.local/windowState"
+const char* ssid = "NPJYOGA9I";
+const char* password = "aaaabbbb";
+const char* url = "http://bathroommaster.local/windowState";
 
-const int fan = 4;
+const int fan = D2;
 
 void setup() {
-  Serial.begin(115200);
+  Serial.begin(9600);
   WiFi.begin(ssid, password);
   pinMode(fan, OUTPUT);
   
@@ -42,9 +42,11 @@ bool getShouldTurnOn() {
   
   int httpCode = http.GET(); 
   if (httpCode == 200) { 
+    Serial.println("got 200");
     String payload = http.getString();
     payload.trim(); 
     http.end();
+    Serial.println(payload);
     return payload == "true";
   } else {
     Serial.printf("HTTP GET failed, error: %s\n", http.errorToString(httpCode).c_str());

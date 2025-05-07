@@ -54,7 +54,7 @@
         url: 'toilet.csv',
         xField: 'timestamp',
         yFields: [
-          { field: 'state', label: 'Toilet state', axis: 'y', color: 'rgba(255, 99, 132, 1)' }
+          { field: 'state', label: 'Toilet state', axis: 'y', color: 'rgba(255, 99, 132, 1)', options: { stepped: true } }
         ],
         title: 'Toilet state over time'
       },
@@ -74,22 +74,21 @@
       const heading = document.createElement('h2');
       heading.textContent = title;
       const canvas = document.createElement('canvas');
-      container.appendChild(heading);
-      container.appendChild(canvas);
-      document.getElementById('charts').appendChild(container);
+      container.append(heading, canvas);
+      document.getElementById('charts').append(container);
       return canvas.getContext('2d');
     }
 
-    function setupMultiYAxisChart(ctx, xLabel, yFields) {
+    function setupMultiYAxisChart(ctx, xLabel, yFields, options) {
       const datasets = yFields.map(field => ({
         label: field.label,
         data: [],
         borderColor: field.color,
         backgroundColor: field.color.replace('1)', '0.2)'),
         yAxisID: field.axis,
-        tension: 0.3,
         pointRadius: 2,
-        fill: false
+        fill: false,
+        ...field.options
       }));
 
       const yScales = yFields.reduce((acc, field) => {
@@ -130,7 +129,8 @@
               }
             },
             ...yScales
-          }
+          },
+          ...options
         }
       });
     }
@@ -157,7 +157,7 @@
 
     chartConfigs.forEach(config => {
       const ctx = createChartContainer(config.title);
-      const chart = setupMultiYAxisChart(ctx, config.xField, config.yFields);
+      const chart = setupMultiYAxisChart(ctx, config.xField, config.yFields, config.options);
       fetchAndUpdate(chart, config);
       setInterval(() => fetchAndUpdate(chart, config), 20000);
     });
