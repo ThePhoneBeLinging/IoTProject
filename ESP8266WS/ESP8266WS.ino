@@ -1,14 +1,14 @@
 #include <ESP8266WiFi.h>
 #include <WiFiClient.h>
-#include <ESP8266WiFiMulti.h> 
+#include <ESP8266WiFiMulti.h>
 #include <ESP8266mDNS.h>
-#include <ESP8266WebServer.h>   // Include the WebServer library
+#include <ESP8266WebServer.h>  // Include the WebServer library
 #include <WiFiUdp.h>
-#include <NTPClient.h> // NTP Client by Fabrice Weinberg
+#include <NTPClient.h>  // NTP Client by Fabrice Weinberg
 #include <ESP8266mDNS.h>
 #include "FS.h"
-#include <Wire.h> 
-#include <LiquidCrystal_I2C.h> // Using adafruit lcd library
+#include <Wire.h>
+#include <LiquidCrystal_I2C.h>  // Using adafruit lcd library
 
 #define WIFI_SSID ""
 #define WIFI_PASSWORD ""
@@ -18,64 +18,64 @@
 #define DHT_FILE "/dht.csv"
 #define LIGHT_FILE "/light.csv"
 #define FILE_COUNT 4
-char* files[FILE_COUNT] {
+char* files[FILE_COUNT]{
   WATER_FILE, TOILET_FILE, DHT_FILE, LIGHT_FILE
 };
 String newHostname = "bathroommaster";
 
 
-int purge_checktime = 3600000; // Once an hour
-long last_purgetime = -purge_checktime; // -purge_checktime so that is purges on startup
-int purge_timelimit_sec = 86400; // Purge all data older than 24 hrs
+int purge_checktime = 3600000;           // Once an hour
+long last_purgetime = -purge_checktime;  // -purge_checktime so that is purges on startup
+int purge_timelimit_sec = 86400;         // Purge all data older than 24 hrs
 
-ESP8266WiFiMulti wifiMulti;     // Create an instance of the ESP8266WiFiMulti class, called 'wifiMulti'
-ESP8266WebServer server(80);    // Create a webserver object that listens for HTTP request on port 80
+ESP8266WiFiMulti wifiMulti;   // Create an instance of the ESP8266WiFiMulti class, called 'wifiMulti'
+ESP8266WebServer server(80);  // Create a webserver object that listens for HTTP request on port 80
 
 WiFiUDP ntpUDP;
 NTPClient timeClient(ntpUDP, "europe.pool.ntp.org", 0, 300000); // 0 = UTC offset in seconds, 300000 = update interval (ms)
 unsigned long unixTime;
 
-LiquidCrystal_I2C lcd(0x27,16,2);  // set the LCD address to 0x27 for a 16 chars and 2 line display
+LiquidCrystal_I2C lcd(0x27, 16, 2);  // set the LCD address to 0x27 for a 16 chars and 2 line display
 
-void handleRoot();              // function prototypes for HTTP handlers
+void handleRoot();  // function prototypes for HTTP handlers
 void handleNotFound();
 
-void setup(void){
-  Serial.begin(115200);         // Start the Serial communication to send messages to the computer
+void setup(void) {
+  Serial.begin(115200);  // Start the Serial communication to send messages to the computer
   delay(10);
   Serial.println('\n');
 
   lcd.init();
   lcd.backlight();
   lcd.clear();
-  lcd.setCursor(0,0);
+  lcd.setCursor(0, 0);
   lcd.print("Connecting:");
-  lcd.setCursor(0,1);
+  lcd.setCursor(0, 1);
   lcd.print(WIFI_SSID);
 
-  
-  wifiMulti.addAP(WIFI_SSID, WIFI_PASSWORD);   // add Wi-Fi networks you want to connect to
+
+  wifiMulti.addAP(WIFI_SSID, WIFI_PASSWORD);  // add Wi-Fi networks you want to connect to
   wifiMulti.addAP("NPJYOGA9I", "aaaabbbb");
   WiFi.hostname(newHostname.c_str());
 
   Serial.println("Connecting ...");
   int i = 0;
-  while (wifiMulti.run() != WL_CONNECTED) { // Wait for the Wi-Fi to connect: scan for Wi-Fi networks, and connect to the strongest of the networks above
+  while (wifiMulti.run() != WL_CONNECTED) {  // Wait for the Wi-Fi to connect: scan for Wi-Fi networks, and connect to the strongest of the networks above
     delay(250);
     Serial.print('.');
   }
   Serial.println('\n');
   Serial.print("Connected to ");
-  Serial.println(WiFi.SSID());              // Tell us what network we're connected to
+  Serial.println(WiFi.SSID());  // Tell us what network we're connected to
   Serial.print("IP address:\t");
-  Serial.println(WiFi.localIP());           // Send the IP address of the ESP8266 to the computer
+  Serial.println(WiFi.localIP());  // Send the IP address of the ESP8266 to the computer
   lcd.clear();
-  lcd.setCursor(0,0);
+  lcd.setCursor(0, 0);
   lcd.print("Connected, IP:");
-  lcd.setCursor(0,1);
+  lcd.setCursor(0, 1);
   lcd.print(WiFi.localIP());
 
-     // Set mDNS hostname
+  // Set mDNS hostname
   if (MDNS.begin(newHostname)) {
     Serial.println("mDNS responder started");
     Serial.print("You can now access it via http://");
@@ -90,8 +90,8 @@ void setup(void){
     Serial.println("Failed to mount SPIFFS");
     return;
   }
-  
-  server.on("/", handleRoot);               // Call the 'handleRoot' function when a client requests URI "/"
+
+  server.on("/", handleRoot);  // Call the 'handleRoot' function when a client requests URI "/"
   //server.onNotFound(handleNotFound);        // When a client requests an unknown URI (i.e. something other than "/"), call function "handleNotFound"
   server.onNotFound([]() {
     String path = server.uri();
@@ -107,13 +107,13 @@ void setup(void){
       String contentType = getContentType(path);
       server.chunkedResponseModeStart(200, contentType);
       File file = SPIFFS.open(path, "r");
-      
+
       server.setContentLength(file.size());
-      
-     
-      
+
+
+
       char buffer[2048];
-      while(file.available()) {
+      while (file.available()) {
         size_t len = file.readBytes(buffer, 2048);
         server.sendContent(buffer, len);
       }
@@ -123,7 +123,7 @@ void setup(void){
       server.send(404, "text/plain", "File Not Found");
     }
   });
-  
+
   server.on("/updateLight", updateLight);
   server.on("/updateToilet", updateToilet);
   server.on("/submitWater", updateWater);
@@ -184,15 +184,15 @@ int appendToFile(const char* filename, const char* format, ...) {
 }
 
 
-void loop(void){
+void loop(void) {
   //MDNS.update(); // Important!
   Serial.print('a');
-  timeClient.update(); // Update unix time
+  timeClient.update();  // Update unix time
   Serial.print('b');
-  unixTime = timeClient.getEpochTime(); // Set global unixTime
+  unixTime = timeClient.getEpochTime();  // Set global unixTime
 
   Serial.print('c');
-  server.handleClient();                    // Listen for HTTP requests from clients
+  server.handleClient();  // Listen for HTTP requests from clients
   Serial.print('d');
   updateLCD();
   Serial.print('e');
@@ -202,11 +202,11 @@ void loop(void){
 }
 
 void handleRoot() {
-  server.send(200, "text/plain", "Hello world!");   // Send HTTP status 200 (Ok) and send some text to the browser/client
+  server.send(200, "text/plain", "Hello world!");  // Send HTTP status 200 (Ok) and send some text to the browser/client
 }
 
-void handleNotFound(){
-  server.send(404, "text/plain", "404: Not found"); // Send HTTP status 404 (Not Found) when there's no handler for the URI in the request
+void handleNotFound() {
+  server.send(404, "text/plain", "404: Not found");  // Send HTTP status 404 (Not Found) when there's no handler for the URI in the request
 }
 
 int toilet_state = 0;
@@ -225,8 +225,11 @@ void updateToilet() {
   }
 
   bool success = !appendToFile(TOILET_FILE, "%d,%d\n", unixTime, toilet_state);
-  if (success) { server.send(200, "text/plain", "OK"); }
-  else { server.send(500, "text/plain", "ERROR WRITING TO FILE"); }
+  if (success) {
+    server.send(200, "text/plain", "OK");
+  } else {
+    server.send(500, "text/plain", "ERROR WRITING TO FILE");
+  }
 }
 
 int light_state = 0;
@@ -235,18 +238,25 @@ void updateLight() {
   String value = server.arg("state");
   light_state = value.toInt();
   bool success = !appendToFile(LIGHT_FILE, "%d,%d\n", unixTime, light_state);
-  if (success) { server.send(200, "text/plain", "OK"); }
-  else { server.send(500, "text/plain", "ERROR WRITING TO FILE"); }
+  if (success) {
+    server.send(200, "text/plain", "OK");
+  } else {
+    server.send(500, "text/plain", "ERROR WRITING TO FILE");
+  }
 }
 
 float water_number = 0.0;
 void updateWater() {
   Serial.println("Update Water Amount");
   String water_amt = server.arg("water_amt");
-  water_number = water_amt.toFloat();;
+  water_number = water_amt.toFloat();
+  ;
   bool success = !appendToFile(WATER_FILE, "%d,%f\n", unixTime, water_number);
-  if (success) { server.send(200, "text/plain", "OK"); }
-  else { server.send(500, "text/plain", "ERROR WRITING TO FILE"); }
+  if (success) {
+    server.send(200, "text/plain", "OK");
+  } else {
+    server.send(500, "text/plain", "ERROR WRITING TO FILE");
+  }
 }
 
 float temp = 0.0;
@@ -258,8 +268,11 @@ void submitBathroomDHT() {
   temp = tempstr.toFloat();
   hum = humstr.toFloat();
   bool success = !appendToFile(DHT_FILE, "%d,%s,%s\n", unixTime, tempstr.c_str(), humstr.c_str());
-  if (success) { server.send(200, "text/plain", "OK"); }
-  else { server.send(500, "text/plain", "ERROR WRITING TO FILE"); }
+  if (success) {
+    server.send(200, "text/plain", "OK");
+  } else {
+    server.send(500, "text/plain", "ERROR WRITING TO FILE");
+  }
 }
 void getTemperature() {
   server.send(200, "text/plain", String(temp));
@@ -267,33 +280,45 @@ void getTemperature() {
 
 bool windowState = false;
 unsigned long begin_open_window_time = 0;
-unsigned long current_open_window_time = 0;
+bool openedFromToilet = false;
 void getWindowState() {
   Serial.println("Get Window State");
-  current_open_window_time = millis() - begin_open_window_time;
-  if (temp > 23 || hum > 60) {
+  unsigned long current_open_window_time = millis() - begin_open_window_time;
+  if (openedFromToilet)
+  {
+    if (current_open_window_time > 180000)
+    {
+      windowState = false;
+      openedFromToilet = false;
+    }
+    else 
+    {
+      windowState = true;
+    }
+  }
+  else if (temp > 23 || hum > 60) {
     windowState = true;
-    begin_open_window_time = millis();
   } else if (time_on_toilet > 20*1000) {
     windowState = true;
     time_on_toilet = 0;
     begin_open_window_time = millis();
-  } else if (current_open_window_time > 20*1000 || temp < 22) {
+    openedFromToilet = true;
+  } else if (temp < 22 && hum < 40) {
     begin_open_window_time = 0;
     windowState = false;
-  } 
+  }
   server.send(200, "text/plain", String(windowState ? "true" : "false"));
 }
 
 bool shouldTurnOn = false;
 void getShouldTurnOn() {
   Serial.println("Get Should Turn On");
-  if(temp < 20.0) {
+  if (temp < 20.0) {
     shouldTurnOn = true;
   } else if (temp > 21.0) {
     shouldTurnOn = false;
   }
-  
+
   Serial.println("Thermostat");
   server.send(200, "text/plain", String(shouldTurnOn ? "true" : "false"));
 }
@@ -308,18 +333,37 @@ void updateLCD() {
   } else {
     return;
   }
-  
+
   char msg[17];
   lcd.clear();
-  lcd.setCursor(0,0);
-  
-  switch(LCD_index) {
-    case 0: lcd.print("Toilet State"); lcd.setCursor(0,1); lcd.print(toilet_state ? "Active" : "Inactive"); break;
-    case 1: lcd.print("Shower Usage"); lcd.setCursor(0,1); sprintf(msg, "%.2fL", water_number); lcd.print(msg); break;
-    case 2: lcd.print("Room Temperature"); lcd.setCursor(0,1); sprintf(msg, "%.2f C", temp); lcd.print(msg); break;
-    case 3: lcd.print("Room Humidity"); lcd.setCursor(0,1); sprintf(msg, "%.2f %%", hum); lcd.print(msg); break;
+  lcd.setCursor(0, 0);
+
+  switch (LCD_index) {
+    case 0:
+      lcd.print("Toilet State");
+      lcd.setCursor(0, 1);
+      lcd.print(toilet_state ? "Active" : "Inactive");
+      break;
+    case 1:
+      lcd.print("Shower Usage");
+      lcd.setCursor(0, 1);
+      sprintf(msg, "%.2fL", water_number);
+      lcd.print(msg);
+      break;
+    case 2:
+      lcd.print("Room Temperature");
+      lcd.setCursor(0, 1);
+      sprintf(msg, "%.2f C", temp);
+      lcd.print(msg);
+      break;
+    case 3:
+      lcd.print("Room Humidity");
+      lcd.setCursor(0, 1);
+      sprintf(msg, "%.2f %%", hum);
+      lcd.print(msg);
+      break;
   }
-  LCD_index = (LCD_index+1)%LCD_maxindex;
+  LCD_index = (LCD_index + 1) % LCD_maxindex;
 }
 
 void purgeData() {
@@ -341,7 +385,7 @@ void purgeData() {
       continue;
     }
 
-    String infoline = original.readStringUntil('\n'); // Purge first entry in csv file
+    String infoline = original.readStringUntil('\n');  // Purge first entry in csv file
     infoline.trim();
     temp.print(infoline);
     temp.print('\n');
@@ -392,4 +436,3 @@ String getContentType(String filename) {
   else if (filename.endsWith(".zip")) return "application/zip";
   return "text/plain";
 }
-  
