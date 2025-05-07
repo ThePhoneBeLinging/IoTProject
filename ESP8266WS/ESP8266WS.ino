@@ -32,7 +32,7 @@ ESP8266WiFiMulti wifiMulti;     // Create an instance of the ESP8266WiFiMulti cl
 ESP8266WebServer server(80);    // Create a webserver object that listens for HTTP request on port 80
 
 WiFiUDP ntpUDP;
-NTPClient timeClient(ntpUDP, "pool.ntp.org", 0, 60000); // 0 = UTC offset in seconds, 60000 = update interval (ms)
+NTPClient timeClient(ntpUDP, "europe.pool.ntp.org", 0, 300000); // 0 = UTC offset in seconds, 300000 = update interval (ms)
 unsigned long unixTime;
 
 LiquidCrystal_I2C lcd(0x27,16,2);  // set the LCD address to 0x27 for a 16 chars and 2 line display
@@ -274,11 +274,11 @@ void getWindowState() {
   if (temp > 23 || hum > 60) {
     windowState = true;
     begin_open_window_time = millis();
-  } else if (time_on_toilet > 180000) {
+  } else if (time_on_toilet > 20*1000) {
     windowState = true;
     time_on_toilet = 0;
     begin_open_window_time = millis();
-  } else if (current_open_window_time > 180000 || temp < 22) {
+  } else if (current_open_window_time > 20*1000 || temp < 22) {
     begin_open_window_time = 0;
     windowState = false;
   } 
@@ -290,7 +290,7 @@ void getShouldTurnOn() {
   Serial.println("Get Should Turn On");
   if(temp < 20.0) {
     shouldTurnOn = true;
-  } else {
+  } else if (temp > 21.0) {
     shouldTurnOn = false;
   }
   

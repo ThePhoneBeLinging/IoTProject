@@ -7,7 +7,7 @@
 
 #define WIFI_SSID ""
 #define WIFI_PASSWORD ""
-#define DATA_ENDPOINT "http://192.168.137.174/submitWater?"
+#define DATA_ENDPOINT "http://192.168.137.107/submitWater?"
 String newHostname = "showerguy";
 ESP8266WiFiMulti wifiMulti;
 
