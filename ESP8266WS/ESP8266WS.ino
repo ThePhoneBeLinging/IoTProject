@@ -23,9 +23,10 @@ char* files[FILE_COUNT] {
 };
 String newHostname = "bathroommaster";
 
-long last_purgetime = 0;
-int purge_checktime = 60000; // Once a minute (should be higher)
-int purge_timelimit_sec = 120; // Purge all data older than 2 minutes
+
+int purge_checktime = 3600000; // Once an hour
+long last_purgetime = -purge_checktime; // -purge_checktime so that is purges on startup
+int purge_timelimit_sec = 86400; // Purge all data older than 24 hrs
 
 ESP8266WiFiMulti wifiMulti;     // Create an instance of the ESP8266WiFiMulti class, called 'wifiMulti'
 ESP8266WebServer server(80);    // Create a webserver object that listens for HTTP request on port 80
@@ -184,13 +185,14 @@ int appendToFile(const char* filename, const char* format, ...) {
 
 
 void loop(void){
-  MDNS.update(); // Important!
+  //MDNS.update(); // Important!
   timeClient.update(); // Update unix time
   unixTime = timeClient.getEpochTime(); // Set global unixTime
   
   server.handleClient();                    // Listen for HTTP requests from clients
   updateLCD();
   purgeData();
+  delay(5);
 }
 
 void handleRoot() {
@@ -254,8 +256,6 @@ bool shouldTurnOn = false;
 void getShouldTurnOn() {
   if(temp < 20.0) {
     shouldTurnOn = true;
-  } else {
-    shouldTurnOn = false;
   }
   Serial.println("Thermostat");
   server.send(200, "text/plain", String(shouldTurnOn ? "true" : "false"));
@@ -306,7 +306,8 @@ void purgeData() {
 
     String infoline = original.readStringUntil('\n'); // Purge first entry in csv file
     infoline.trim();
-    temp.println(infoline);
+    temp.print(infoline);
+    temp.print('\n');
     while (original.available()) {
       String line = original.readStringUntil('\n');
       line.trim();
