@@ -65,6 +65,14 @@
           { field: 'water_amt', label: 'Showet water usage (L)', axis: 'y', color: 'rgba(0, 80, 240, 1)' }
         ],
         title: 'Shower water usage over time'
+      },
+      {
+        url: 'light.csv',
+        xField: 'timestamp',
+        yFields: [
+          { field: 'state', label: 'Light state', axis: 'y', color: 'rgba(255, 99, 132, 1)', options: { stepped: true } }
+        ],
+        title: 'Light state over time'
       }
     ];
 

@@ -186,12 +186,18 @@ int appendToFile(const char* filename, const char* format, ...) {
 
 void loop(void){
   //MDNS.update(); // Important!
+  Serial.print('a');
   timeClient.update(); // Update unix time
+  Serial.print('b');
   unixTime = timeClient.getEpochTime(); // Set global unixTime
-  
+
+  Serial.print('c');
   server.handleClient();                    // Listen for HTTP requests from clients
+  Serial.print('d');
   updateLCD();
+  Serial.print('e');
   purgeData();
+  Serial.println('f');
   delay(5);
 }
 
@@ -208,6 +214,7 @@ unsigned long begin_toilet_time = 0;
 unsigned long end_toilet_time = 0;
 unsigned long time_on_toilet = 0;
 void updateToilet() {
+  Serial.println("Update Toilet State");
   String value = server.arg("state");
   toilet_state = value.toInt();
   if (toilet_state == 1) {
@@ -224,6 +231,7 @@ void updateToilet() {
 
 int light_state = 0;
 void updateLight() {
+  Serial.println("Update Light State");
   String value = server.arg("state");
   light_state = value.toInt();
   bool success = !appendToFile(LIGHT_FILE, "%d,%d\n", unixTime, light_state);
@@ -233,6 +241,7 @@ void updateLight() {
 
 float water_number = 0.0;
 void updateWater() {
+  Serial.println("Update Water Amount");
   String water_amt = server.arg("water_amt");
   water_number = water_amt.toFloat();;
   bool success = !appendToFile(WATER_FILE, "%d,%f\n", unixTime, water_number);
@@ -243,6 +252,7 @@ void updateWater() {
 float temp = 0.0;
 float hum = 0.0;
 void submitBathroomDHT() {
+  Serial.println("Update DHT Data");
   String tempstr = server.arg("temp");
   String humstr = server.arg("hum");
   temp = tempstr.toFloat();
@@ -259,6 +269,7 @@ bool windowState = false;
 unsigned long begin_open_window_time = 0;
 unsigned long current_open_window_time = 0;
 void getWindowState() {
+  Serial.println("Get Window State");
   current_open_window_time = millis() - begin_open_window_time;
   if (temp > 23 || hum > 60) {
     windowState = true;
@@ -271,16 +282,18 @@ void getWindowState() {
     begin_open_window_time = 0;
     windowState = false;
   } 
-
-  Serial.println("Window");
   server.send(200, "text/plain", String(windowState ? "true" : "false"));
 }
 
 bool shouldTurnOn = false;
 void getShouldTurnOn() {
+  Serial.println("Get Should Turn On");
   if(temp < 20.0) {
     shouldTurnOn = true;
+  } else {
+    shouldTurnOn = false;
   }
+  
   Serial.println("Thermostat");
   server.send(200, "text/plain", String(shouldTurnOn ? "true" : "false"));
 }
