@@ -204,9 +204,19 @@ void handleNotFound(){
 }
 
 int toilet_state = 0;
+unsigned long begin_toilet_time = 0;
+unsigned long end_toilet_time = 0;
+unsigned long time_on_toilet = 0;
 void updateToilet() {
   String value = server.arg("state");
   toilet_state = value.toInt();
+  if (toilet_state == 1) {
+    begin_toilet_time = millis();
+  } else {
+    end_toilet_time = millis();
+    time_on_toilet = end_toilet_time - begin_toilet_time;
+  }
+
   bool success = !appendToFile(TOILET_FILE, "%d,%d\n", unixTime, toilet_state);
   if (success) { server.send(200, "text/plain", "OK"); }
   else { server.send(500, "text/plain", "ERROR WRITING TO FILE"); }
@@ -246,8 +256,22 @@ void getTemperature() {
 }
 
 bool windowState = false;
+unsigned long begin_open_window_time = 0;
+unsigned long current_open_window_time = 0;
 void getWindowState() {
-  windowState = !windowState;
+  current_open_window_time = millis() - begin_open_window_time;
+  if (temp > 23 || hum > 60) {
+    windowState = true;
+    begin_open_window_time = millis();
+  } else if (time_on_toilet > 180000) {
+    windowState = true;
+    time_on_toilet = 0;
+    begin_open_window_time = millis();
+  } else if (current_open_window_time > 180000 || temp < 22) {
+    begin_open_window_time = 0;
+    windowState = false;
+  } 
+
   Serial.println("Window");
   server.send(200, "text/plain", String(windowState ? "true" : "false"));
 }
