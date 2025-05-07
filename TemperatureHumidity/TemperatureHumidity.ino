@@ -15,6 +15,7 @@ DHT dht(D3, DHT11);
 // WiFi credentials
 const char *ssid = "NPJYOGA9I";
 const char *pswd = "aaaabbbb";
+const char *hostname = "dht";
 
 // Webserver
 const char *host = "bathroommaster.local";
@@ -27,6 +28,7 @@ void setup() {
 		Serial.begin(115200);
 	#endif
 	dht.begin();
+	WiFi.hostname(hostname);
 	WiFi.begin(ssid, pswd);
 	#ifdef USE_LEDS
 		pinMode(LED_BUILTIN, OUTPUT);
