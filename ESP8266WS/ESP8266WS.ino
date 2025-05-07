@@ -252,6 +252,8 @@ bool shouldTurnOn = false;
 void getShouldTurnOn() {
   if(temp < 20.0) {
     shouldTurnOn = true;
+  } else {
+    shouldTurnOn = false;
   }
   Serial.println("Thermostat");
   server.send(200, "text/plain", String(shouldTurnOn ? "true" : "false"));

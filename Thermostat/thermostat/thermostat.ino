@@ -29,7 +29,6 @@ bool getShouldTurnUp() {
 			return shouldTurnOn;
     } else {
       Serial.println("Error getting shouldTurnOn");
-			shouldTurnOn = false;
 			return shouldTurnOn;
     }
     http.end();
