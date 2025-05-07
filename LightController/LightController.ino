@@ -35,21 +35,31 @@ void sendState(int value)
 
 void lightOn()
 {
+  WiFiClient client;
+  HTTPClient http;
   digitalWrite(lightPin, HIGH);
   timeStamp = millis();
   if (!lightOnBool)
   {
-    sendState(1);
+    http.begin(client, url + "1");
+    http.GET();
+    Serial.println(url + "1");
+    http.end();
   }
   lightOnBool = true;
 }
 
 void lightOff()
 {
+  WiFiClient client;
+  HTTPClient http;
   digitalWrite(lightPin, LOW);
   if (lightOnBool)
   {
-    sendState(0);
+    http.begin(client, url + "0");
+    http.GET();
+    Serial.println(url + "0");
+    http.end();
   }
   lightOnBool = false;
 }

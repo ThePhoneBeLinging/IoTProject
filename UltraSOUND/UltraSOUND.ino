@@ -113,21 +113,19 @@ void loop() {
   if (personOnToilet && distance > distanceSplitValue)
   {
     pingsSincePersonDetected++;
-    pingsWithPerson = 0;
     if (pingsSincePersonDetected == pingsBeforeStateSwitch)
     {
       toiletEmpty();
-      pingsSincePersonDetected = 0;
+      pingsWithPerson = 0;
     }
   }
   else if (distance <= distanceSplitValue)
   {
     pingsWithPerson++;
-    pingsSincePersonDetected = 0;
     if (pingsWithPerson == pingsBeforeStateSwitch)
     {
       toiletOccupied();
-      pingsWithPerson = 0;
+      pingsSincePersonDetected = 0;
     }
   }
   delay(1000);
