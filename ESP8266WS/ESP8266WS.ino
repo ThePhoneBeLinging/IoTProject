@@ -231,9 +231,11 @@ void updateWater() {
 float temp = 0.0;
 float hum = 0.0;
 void submitBathroomDHT() {
-  temp = server.arg("temp").toFloat();
-  hum = server.arg("hum").toFloat();
-  bool success = !appendToFile(DHT_FILE, "%d,%f,%f\n", unixTime, temp, hum);
+  String tempstr = server.arg("temp");
+  String humstr = server.arg("hum");
+  temp = tempstr.toFloat();
+  hum = humstr.toFloat();
+  bool success = !appendToFile(DHT_FILE, "%d,%s,%s\n", unixTime, tempstr.c_str(), humstr.c_str());
   if (success) { server.send(200, "text/plain", "OK"); }
   else { server.send(500, "text/plain", "ERROR WRITING TO FILE"); }
 }
