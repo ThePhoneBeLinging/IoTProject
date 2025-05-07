@@ -288,7 +288,7 @@ void getWindowState() {
   {
     if (current_open_window_time > 180000)
     {
-      windowState = false;
+      windowState = true;
       openedFromToilet = false;
     }
     else 
