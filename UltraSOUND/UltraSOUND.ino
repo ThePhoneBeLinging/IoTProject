@@ -28,7 +28,9 @@
 const char* ssid = "NPJYOGA9I";
 const char* password =  "aaaabbbb";
 
-const char* hostname = "http://bathroommaster.local/updateToilet?state=";
+const char* newHostname = "Toilet-Abuser-Detector";
+
+const char* hostname = "http://192.168.137.174/updateToilet?state=";
 String url = hostname;
 
 
@@ -60,6 +62,7 @@ int getDistance()
 
 
 void setup() {
+  WiFi.hostname(newHostname);
   Serial.begin(9600);
   pinMode(trigPin, OUTPUT);
   pinMode(echoPin,INPUT);
@@ -106,10 +109,11 @@ void loop() {
   }
   emitSoundWaves();
   float distance = getDistance();
-  Serial.println(personOnToilet);
+  Serial.println(distance <= distanceSplitValue);
   if (personOnToilet && distance > distanceSplitValue)
   {
     pingsSincePersonDetected++;
+    pingsWithPerson = 0;
     if (pingsSincePersonDetected == pingsBeforeStateSwitch)
     {
       toiletEmpty();
@@ -119,6 +123,7 @@ void loop() {
   else if (distance <= distanceSplitValue)
   {
     pingsWithPerson++;
+    pingsSincePersonDetected = 0;
     if (pingsWithPerson == pingsBeforeStateSwitch)
     {
       toiletOccupied();

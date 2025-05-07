@@ -7,26 +7,39 @@ int motionSensorPin = D1;
 bool lightOnBool = false;
 int milliSecondsToKeepLightOn = 5000;
 unsigned long timeStamp = 0;
-int lightValueLimit = 75;
+int lightValueLimit = 600;
+
+const char* newHostname = "LightController";
 
 const char* ssid = "NPJYOGA9I";
 const char* password =  "aaaabbbb";
 
-const char* hostname = "http://bathroommaster.local/updateLight?state=";
+const char* hostname = "http://192.168.137.174/updateLight?state=";
 String url = hostname;
 
-void lightOn()
+void sendState(int value)
 {
-  timeStamp = millis();
-  digitalWrite(lightPin, HIGH);
-  if (!lightOnBool)
+  int code = -1;
+  while (code != 200)
   {
     WiFiClient client;
     HTTPClient http;
-    http.begin(client, url + "1");
-    http.GET();
-    Serial.println(url + "1");
+    http.begin(client, url + String(value));
+    Serial.println(code);
+    Serial.println(url + String(value));
+    code = http.GET();
     http.end();
+    delay(1000);
+  }
+}
+
+void lightOn()
+{
+  digitalWrite(lightPin, HIGH);
+  timeStamp = millis();
+  if (!lightOnBool)
+  {
+    sendState(1);
   }
   lightOnBool = true;
 }
@@ -36,18 +49,14 @@ void lightOff()
   digitalWrite(lightPin, LOW);
   if (lightOnBool)
   {
-    WiFiClient client;
-    HTTPClient http;
-    http.begin(client, url + "0");
-    http.GET();
-    Serial.println(url + "0");
-    http.end();
+    sendState(0);
   }
   lightOnBool = false;
 }
 
 void setup() 
 {
+  WiFi.hostname(newHostname);
   Serial.begin(9600);
   pinMode(lightPin, OUTPUT);
   pinMode(motionSensorPin, INPUT);
