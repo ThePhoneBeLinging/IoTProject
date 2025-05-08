@@ -10,8 +10,8 @@
 #include <Wire.h>
 #include <LiquidCrystal_I2C.h>  // Using adafruit lcd library
 
-#define WIFI_SSID ""
-#define WIFI_PASSWORD ""
+#define WIFI_SSID "NPJYOGA9I"
+#define WIFI_PASSWORD "aaaabbbb"
 
 #define WATER_FILE "/water.csv"
 #define TOILET_FILE "/toilet.csv"
@@ -28,8 +28,14 @@ int purge_checktime = 3600000;           // Once an hour
 long last_purgetime = -purge_checktime;  // -purge_checktime so that is purges on startup
 int purge_timelimit_sec = 86400;         // Purge all data older than 24 hrs
 
-ESP8266WiFiMulti wifiMulti;   // Create an instance of the ESP8266WiFiMulti class, called 'wifiMulti'
+//ESP8266WiFiMulti wifiMulti;   // Create an instance of the ESP8266WiFiMulti class, called 'wifiMulti'
 ESP8266WebServer server(80);  // Create a webserver object that listens for HTTP request on port 80
+IPAddress local_IP(192, 168, 137, 107);
+// Set your Gateway IP address
+IPAddress gateway(192, 168, 137, 1);
+IPAddress subnet(255, 255, 255, 0);
+IPAddress primaryDNS(8, 8, 8, 8);   //optional
+IPAddress secondaryDNS(8, 8, 4, 4); //optional
 
 WiFiUDP ntpUDP;
 NTPClient timeClient(ntpUDP, "europe.pool.ntp.org", 0, 300000); // 0 = UTC offset in seconds, 300000 = update interval (ms)
@@ -53,17 +59,27 @@ void setup(void) {
   lcd.setCursor(0, 1);
   lcd.print(WIFI_SSID);
 
+  //WiFi.mode(WIFI_STA);
+  if (!WiFi.config(local_IP, gateway, subnet, primaryDNS, secondaryDNS)) {
+    Serial.println("STA Failed to configure");
+  }
+  WiFi.begin(WIFI_SSID, WIFI_PASSWORD);
+  while (WiFi.status() != WL_CONNECTED) {
+    delay(500);
+    Serial.print(".");
+  }
 
-  wifiMulti.addAP(WIFI_SSID, WIFI_PASSWORD);  // add Wi-Fi networks you want to connect to
-  wifiMulti.addAP("NPJYOGA9I", "aaaabbbb");
+
+  //wifiMulti.addAP(WIFI_SSID, WIFI_PASSWORD);  // add Wi-Fi networks you want to connect to
+  //wifiMulti.addAP("NPJYOGA9I", "aaaabbbb");
   WiFi.hostname(newHostname.c_str());
 
   Serial.println("Connecting ...");
   int i = 0;
-  while (wifiMulti.run() != WL_CONNECTED) {  // Wait for the Wi-Fi to connect: scan for Wi-Fi networks, and connect to the strongest of the networks above
+  /*while (wifiMulti.run() != WL_CONNECTED) {  // Wait for the Wi-Fi to connect: scan for Wi-Fi networks, and connect to the strongest of the networks above
     delay(250);
     Serial.print('.');
-  }
+  }*/
   Serial.println('\n');
   Serial.print("Connected to ");
   Serial.println(WiFi.SSID());  // Tell us what network we're connected to
