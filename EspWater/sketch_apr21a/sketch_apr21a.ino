@@ -13,9 +13,9 @@ ESP8266WiFiMulti wifiMulti;
 
 MPU6050 mpu;
 
-float wmin = 10.0f;
+float wmin = 170.0f;
 float threshhold = 2.0f;
-float wmax = 110.0f;
+float wmax = 160.0f;
 float lpm_max = 15.0f; // Liters per minute at max shower pressure 
 int sumbit_delay = 30000;
 

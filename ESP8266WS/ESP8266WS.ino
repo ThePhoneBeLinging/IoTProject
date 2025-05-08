@@ -186,18 +186,18 @@ int appendToFile(const char* filename, const char* format, ...) {
 
 void loop(void) {
   //MDNS.update(); // Important!
-  Serial.print('a');
+  //Serial.print('a');
   timeClient.update();  // Update unix time
-  Serial.print('b');
+  //Serial.print('b');
   unixTime = timeClient.getEpochTime();  // Set global unixTime
 
-  Serial.print('c');
+  //Serial.print('c');
   server.handleClient();  // Listen for HTTP requests from clients
-  Serial.print('d');
+  //Serial.print('d');
   updateLCD();
-  Serial.print('e');
+  //Serial.print('e');
   purgeData();
-  Serial.println('f');
+  //Serial.println('f');
   delay(5);
 }
 
