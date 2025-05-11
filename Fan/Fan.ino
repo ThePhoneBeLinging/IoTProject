@@ -4,7 +4,8 @@
 
 const char* ssid = "NPJYOGA9I";
 const char* password = "aaaabbbb";
-const char* url = "http://bathroommaster.local/windowState";
+const char* url = "http://192.168.137.107/windowState";
+String newHostname = "Window";
 
 const int fan = D2;
 
@@ -18,6 +19,7 @@ void setup() {
     delay(500);
     Serial.println(".");
   }
+  WiFi.hostname(newHostname.c_str());
   Serial.println("\nConnected to WiFi!");
 }
 
